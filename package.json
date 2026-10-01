@@ -1,0 +1,19 @@
+{
+  "name": "math-llm-tiny",
+  "version": "3.0.0",
+  "private": true,
+  "description": "A tiny Transformer that learns single-digit arithmetic, with a web UI that shows every matrix, gradient and weight update.",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @math-llm/web --",
+    "build": "npm run build -w @math-llm/core && npm run build -w @math-llm/web",
+    "train": "npm run train -w @math-llm/core --",
+    "ask": "npm run ask -w @math-llm/core --",
+    "test": "npm run test -w @math-llm/core"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
