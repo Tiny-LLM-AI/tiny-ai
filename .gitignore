@@ -22,6 +22,10 @@ temp/
 tiny-model.json
 *.debug.json
 checkpoints/
+models/exports/**/*
+!models/exports/README.md
+!models/exports/.gitkeep
+!models/exports/index.json
 
 # Local environment and secrets
 .env

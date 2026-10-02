@@ -1,17 +1,22 @@
 {
-  "name": "math-llm-tiny",
+  "name": "math-llm-mini",
   "version": "3.0.0",
   "private": true,
-  "description": "A tiny Transformer that learns single-digit arithmetic, with a web UI that shows every matrix, gradient and weight update.",
+  "description": "Learn how LLMs work at the matrix level: Tiny LLM (minimal) and Full Follow LLM (Transformer), each with its own web UI.",
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev -w @math-llm/web --",
-    "build": "npm run build -w @math-llm/core && npm run build -w @math-llm/web",
-    "train": "npm run train -w @math-llm/core --",
-    "ask": "npm run ask -w @math-llm/core --",
-    "test": "npm run test -w @math-llm/core"
+    "dev:tiny": "npm run dev -w @math-llm/tiny-web",
+    "dev:tiny:watch": "npm run dev:watch -w @math-llm/tiny-web",
+    "build": "npm run build -w @math-llm/tiny-llm && npm run build -w @math-llm/tiny-web",
+    "train:tiny": "npm run train -w @math-llm/tiny-llm --",
+    "chat:tiny": "npm run chat -w @math-llm/tiny-llm --",
+    "models:list": "npm run models -w @math-llm/tiny-llm -- list",
+    "start:model": "npm run start-model -w @math-llm/tiny-llm --",
+    "resume:tiny": "npm run train -w @math-llm/tiny-llm -- --resume",
+    "verify:tiny": "npm run verify -w @math-llm/tiny-llm",
+    "test:tiny": "npm run test -w @math-llm/tiny-llm"
   },
   "engines": {
     "node": ">=22"

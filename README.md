@@ -1,85 +1,155 @@
-# Tiny Arithmetic Transformer
+# LLM-mini
 
-A GPT-style Transformer with 2,847 learnable numbers that learns single-digit arithmetic (`2+3=5`, `1-3=-2`, `6/2=3`), together with a web UI that shows **every matrix, every gradient and every weight update**.
+Learn how language models work at the matrix level. Two independent packages, each with its own web UI:
 
-The goal is understanding, not performance. The model is written in plain TypeScript with no machine-learning library: the forward pass, the backward pass (backpropagation) and the optimizers are all hand-written and short enough to read.
+| Package | Folder | UI | Port |
+|---------|--------|-----|------|
+| **Tiny LLM** | `packages/tiny-llm` + `packages/tiny-web` | Dynamic GPT (mini → 1B params) on TF.js, attention/weights panels, CLI for big models | `5200` |
+| **Full Follow LLM** | `packages/full-follow-llm` + `packages/full-follow-llm-web` | GPT-style Transformer with attention, forward/backward traces | `5199` |
 
-## What you can see in the web UI
+Everything is plain TypeScript - no PyTorch. Forward pass, backpropagation, and optimizers are written by hand.
 
-1. **Data & model**: the vocabulary, how one example becomes several next-character training samples, and the list of all learnable matrices.
-2. **Ask: forward pass**: type a question and follow the computation stage by stage: token ids, embedding lookup, position embedding, Q/K/V, attention scores with the causal mask, softmax, weighted values, residual connections, layer norm, the feed-forward network, logits and the final probabilities. Click any cell of any result matrix to see the exact multiply-and-add that produced it.
-3. **Train: backward pass**: train for many epochs and watch loss and accuracy, or train on a single sample and inspect the loss, the error signal at the output, how much gradient each parameter receives, and each weight before and after the update (with the exact SGD or Adam arithmetic per weight).
+## Quick start
 
-## Getting started
-
-Requires Node.js 22 or newer.
+Requires **Node.js 22+**.
 
 ```bash
 npm install
-npm run dev        # web UI on http://localhost:5173
+
+npm run dev:tiny    # Tiny LLM UI → http://localhost:5200
+npm run dev:full    # Full Follow LLM UI → http://localhost:5199
 ```
 
-Command line:
+Build all packages:
 
 ```bash
-npm run train              # trains and writes tiny-model.json (about 10 seconds)
-npm run ask -- "2+3="      # loads tiny-model.json and answers step by step
-npm test                   # checks backpropagation against numerical gradients
+npm run build
 ```
 
-## How the model works
+Tests:
+
+```bash
+npm run test:tiny
+npm run test:full
+```
+
+CLI (Tiny LLM):
+
+```bash
+npm run train:tiny -- --preset small --steps 3000
+npm run chat:tiny -- --model models/small
+```
+
+CLI (Full Follow LLM):
+
+```bash
+npm run train:full
+npm run ask:full -- "2+3="
+```
+
+---
+
+## Tiny LLM (`packages/tiny-llm` + `packages/tiny-web`)
+
+A real, fully configurable GPT (decoder-only transformer) built on TensorFlow.js - from ~30k parameters up to ~1B.
 
 ```text
-"2+3="                          characters
-  → [0,0,0,0,8,3,9,14]          token ids, padded on the left to 8 positions
-  → tokenEmbedding rows         8 × 16 matrix, one vector per position
-  + positionEmbedding           so the model knows where each character is
-  → Transformer block
-      Q, K, V = X · W + b       three learned projections
-      softmax(Q·Kᵀ/√d + mask)   attention weights, the mask hides future positions
-      · V                       mix information between positions
-      residual + layer norm
-      ReLU MLP                  process each position on its own
-      residual + layer norm
-  → last position · outputWeight → 15 logits, one per vocabulary character
-  → softmax                      probabilities
-  → pick the most likely         "5", then repeat until END
+text → char tokens → embeddings + positions → N × (LayerNorm → causal multi-head attention → LayerNorm → GELU MLP) → tied output head → softmax → next token
 ```
 
-Training uses cross-entropy loss on the next character, backpropagation to compute the gradient of every weight, and Adam (or plain SGD) to update the weights. The model never sees a rule such as "if the operator is + then add": everything it knows is stored in its weight matrices.
+- **Everything dynamic:** layers, d_model, heads, FFN size, context length, learning rate, batch, dropout. The vocabulary is built from whatever text you train on (NFC-normalized, so Vietnamese works).
+- **Target params → auto-fill:** type e.g. `1000000000` in Settings and press Auto-fill; layers/width/heads are picked with GPT-like proportions. Every field stays editable.
+- **Causal LM objective:** the model predicts the next character at every position, so any prompt gets a continuation (`2+2` → `=4`), not just prompts ending in `=`.
+- **Browser** trains small models in a Web Worker (WebGL when available); **Node CLI** trains big ones (tfjs-node-gpu → tfjs-node → wasm → cpu).
 
-## Project structure
+### Presets
+
+| Preset | layers | d_model | heads | FFN | ctx | ≈ params | Where |
+|--------|-------:|--------:|------:|----:|----:|---------:|-------|
+| mini   | 2  | 32   | 2  | 128  | 32   | ~30k  | browser |
+| small  | 4  | 128  | 4  | 512  | 64   | ~0.8M | browser |
+| medium | 6  | 384  | 6  | 1536 | 128  | ~11M  | browser (slow) / CLI |
+| large  | 12 | 768  | 12 | 3072 | 256  | ~85M  | CLI |
+| xl     | 20 | 2048 | 16 | 8192 | 512  | ~1.0B | CLI (big GPU / lots of RAM) |
+
+Params: `vocab·d + ctx·d + layers·(4d² + 2d·ffn + 9d + ffn) + 2d`.
+Training memory ≈ params × 16 bytes (weights + grads + Adam m/v) + activations - a 1B model needs ~16 GB+.
+Settings shows the exact count, memory estimate, and a **Browser OK / Browser slow / CLI only** badge with a ready-to-copy CLI command.
+
+### CLI
+
+```bash
+npm run train:tiny -- --preset small --corpus train-data/vi-sample.txt --steps 5000 --out models/vi-small
+npm run train:tiny -- --target-params 1000000000 --corpus my-big-text.txt --out models/1b
+npm run train:tiny -- --layers 8 --d-model 256 --heads 8 --ffn 1024 --context 128 --corpus data.txt
+npm run train:tiny -- --resume models/vi-small --steps 5000      # continue training
+npm run chat:tiny -- --model models/vi-small --temperature 0.8
+npm run verify:tiny                                             # quick smoke test
+```
+
+Corpus: `.txt` (one line per example) or `.json` (`string[]` or `{ examples: [...] }`). Without `--corpus` it generates arithmetic (`--max-number N`).
+Models are saved as `model.json` (config + vocab) + `weights.bin` (float32).
+
+**Browser:** Stop / **Export version** → `models/exports/v001-stepN-…/` (auto version). **Load** dropdown in UI.
+
+**CLI scripts:**
+
+```bash
+npm run models:list
+npm run start:model -- v001 --mode chat
+npm run start:model -- v002 --mode train --steps 5000
+npm run start:model -- v001 --mode web
+```
+
+### Training Vietnamese
+
+See **[docs/training-vietnamese.md](docs/training-vietnamese.md)** for the full guide (curriculum: sample → Wikipedia, UI button, CLI, references).
+
+**Quick (UI):** Settings → **Start Vietnamese training** → auto-fetch vi.wikipedia + Train.
+
+**Quick (CLI):**
+
+```bash
+npm run train:tiny -- --preset small --corpus train-data/vi-sample.txt --steps 3000 --out models/vi-phase1
+npm run train:tiny -- --resume models/vi-phase1 --corpus train-data/vi-wiki.txt --steps 10000 --out models/vi-phase2
+npm run chat:tiny -- --model models/vi-phase2
+```
+
+A character-level model learns spelling and diacritics first, then words, then grammar. Real fluency needs both a large model and a large corpus.
+
+### Dev watch mode
+
+```bash
+npm run dev:tiny:watch   # Vite + tsc --watch (tiny-llm)
+npm run dev:tiny         # Vite only (port 5200)
+```
+
+---
+
+## Full Follow LLM (`packages/full-follow-llm`)
+
+Full GPT-style decoder (~2,900 params default):
+
+```text
+"2+3=" → embeddings → attention (Q/K/V) → layer norm → MLP → logits → softmax
+```
+
+- **Library:** `packages/full-follow-llm` - model, training, inference, CLI
+- **Web UI:** `packages/full-follow-llm-web` - React app with chat, forward trace, training panel, weight updates
+
+```bash
+npm run dev:full
+```
+
+---
+
+## Project layout
 
 ```text
 packages/
-  core/                         The model, no dependencies
-    src/
-      config.ts                 Model size and training settings
-      math/matrix.ts            Matrix type and operations (matMul, softmax, ...)
-      math/random.ts            Seeded random numbers, so every run is reproducible
-      data/dataset.ts           Loads and validates the arithmetic dataset
-      data/tokenizer.ts         Character ↔ token id
-      data/training-samples.ts  Example → next-character training samples
-      model/parameters.ts       All learnable matrices and their initialization
-      model/forward.ts          Forward pass, records every intermediate matrix
-      model/layer-norm.ts       Layer norm forward and backward
-      model/backward.ts         Backpropagation
-      training/optimizer.ts     SGD and Adam
-      training/trainer.ts       Batches, epochs, single-step reports
-      inference/generate.ts     Greedy next-character generation
-      persistence/model-file.ts Save and load tiny-model.json
-      cli/                      train and ask commands
-    test/gradient-check.test.ts Verifies backpropagation numerically
-  web/                          React + Vite UI
-    src/components/             Matrix heatmap, dot-product and softmax explainers, charts
-    src/views/                  Data, forward pass and training views
-train-data/arithmetic.json      60 single-digit examples
+  tiny-llm/                  @math-llm/tiny-llm - dynamic GPT, trainer, CLI
+  tiny-web/                  @math-llm/tiny-web - Vite UI (port 5200)
+  full-follow-llm/           @math-llm/full-follow-llm - Transformer library + CLI
+  full-follow-llm-web/       @math-llm/full-follow-llm-web - React UI (port 5199)
+train-data/arithmetic.json   Shared arithmetic dataset (used by Full Follow LLM)
 ```
-
-## Changing the dataset
-
-Edit `train-data/arithmetic.json`. Each row is `{ "question": "2+3=", "answer": "5" }`. Rows with a wrong answer are rejected when the dataset is loaded.
-
-## What this project does not cover
-
-This is only the core mechanism: a Transformer learning to predict the next character from supervised examples. Chat models like ChatGPT add three more stages on top of the same mechanism, at a vastly larger scale: pretraining on huge amounts of text, instruction tuning on question/answer conversations, and reinforcement learning from human preferences.

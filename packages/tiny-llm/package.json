@@ -1,0 +1,38 @@
+{
+  "name": "@math-llm/tiny-llm",
+  "version": "2.0.0",
+  "description": "Dynamic GPT-style language model core (TF.js): any vocab, layers, heads, width - from tiny to large. Browser worker + Node CLI.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./train-worker": "./src/train-worker.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -p tsconfig.json --watch --preserveWatchOutput",
+    "train": "node --import tsx/esm src/cli/train.ts",
+    "chat": "node --import tsx/esm src/cli/chat.ts",
+    "models": "node --import tsx/esm src/cli/models.ts",
+    "start-model": "node --import tsx/esm src/cli/start-model.ts",
+    "verify": "node --import tsx/esm src/cli/verify.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@tensorflow/tfjs": "^4.22.0",
+    "@tensorflow/tfjs-backend-wasm": "^4.22.0",
+    "@tensorflow/tfjs-backend-webgl": "^4.22.0"
+  },
+  "optionalDependencies": {
+    "@tensorflow/tfjs-node": "^4.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}

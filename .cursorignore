@@ -1,0 +1,9 @@
+node_modules/
+dist/
+build/
+.vite/
+coverage/
+*.log
+.turbo/
+.cache/
+tiny-model.json

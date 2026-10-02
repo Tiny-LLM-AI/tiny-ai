@@ -1,0 +1,20 @@
+{
+  "name": "@math-llm/tiny-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5200",
+    "dev:watch": "concurrently -n web,llm -c green,blue \"vite --port 5200\" \"npm run watch -w @math-llm/tiny-llm\"",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@math-llm/tiny-llm": "*"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.0"
+  }
+}
