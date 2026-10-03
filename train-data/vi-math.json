@@ -1,0 +1,18 @@
+{
+  "format": "vietnamese-arithmetic/v1",
+  "description": "Phép cộng, trừ, nhân, chia số nguyên; câu hỏi tiếng Việt và đáp án chính xác.",
+  "examples": [
+    {"question":"2 cộng 3 bằng bao nhiêu?","answer":"5"},
+    {"question":"10 cộng 25 bằng bao nhiêu?","answer":"35"},
+    {"question":"9 trừ 4 bằng bao nhiêu?","answer":"5"},
+    {"question":"4 trừ 9 bằng bao nhiêu?","answer":"-5"},
+    {"question":"3 nhân 7 bằng bao nhiêu?","answer":"21"},
+    {"question":"12 nhân 5 bằng bao nhiêu?","answer":"60"},
+    {"question":"20 chia 4 bằng bao nhiêu?","answer":"5"},
+    {"question":"81 chia 9 bằng bao nhiêu?","answer":"9"},
+    {"question":"100 cộng 250 bằng bao nhiêu?","answer":"350"},
+    {"question":"100 trừ 250 bằng bao nhiêu?","answer":"-150"},
+    {"question":"25 nhân 4 bằng bao nhiêu?","answer":"100"},
+    {"question":"144 chia 12 bằng bao nhiêu?","answer":"12"}
+  ]
+}

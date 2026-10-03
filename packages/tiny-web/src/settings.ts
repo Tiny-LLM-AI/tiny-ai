@@ -1,5 +1,6 @@
 import {
   PRESETS,
+  browserModelIssue,
   buildTokenizer,
   corpusTokenCount,
   formatBytes,
@@ -66,7 +67,7 @@ export function cliCommand(shape: ModelShape): string {
     "npm run train:tiny --",
     "--corpus train-data/your-text.txt",
     `--layers ${shape.layers} --d-model ${shape.dModel} --heads ${shape.heads} --ffn ${shape.ffnSize}`,
-    `--context ${shape.contextLength} --lr ${shape.learningRate} --batch ${shape.batchSize}`,
+    `--context ${shape.contextLength} --lr ${shape.learningRate} --batch ${shape.batchSize} --dropout ${shape.dropout} --seed ${shape.seed}`,
     "--steps 20000 --out models/custom",
   ].join(" ");
 }
@@ -200,6 +201,9 @@ export function renderSettingsPage(
   const vocabSize = () => buildTokenizer(corpusEl.value).vocab.length;
 
   const updatePreview = () => {
+    const apply = form.querySelector<HTMLButtonElement>(".apply-btn")!;
+    try {
+    apply.disabled = false;
     const shape = readShape();
     const cfg: GptConfig = { ...shape, vocabSize: vocabSize() };
     form.querySelector("#param-preview")!.textContent =
@@ -208,12 +212,18 @@ export function renderSettingsPage(
     const mem = memoryEstimate(cfg);
     form.querySelector("#mem-preview")!.textContent =
       `Training memory ≈ ${formatBytes(mem.totalBytes)} (weights ${formatBytes(paramCount(cfg) * 4)})`;
-    const t = trainability(cfg);
+    const issue = browserModelIssue(cfg);
+    const t = issue ? "cli" : trainability(cfg);
     form.querySelector("#badge")!.innerHTML = badgeHtml(t);
     form.querySelector("#cli-wrap")!.innerHTML =
       t === "browser"
         ? ""
-        : `<div class="field-hint">${t === "cli" ? "Too large for the browser. Train it with the CLI:" : "Works in the browser but slowly. Faster with the CLI:"}</div><pre class="cli-cmd">${escapeHtml(cliCommand(shape))}</pre>`;
+        : `<div class="field-hint">${issue ? escapeHtml(issue) : "Works in the browser but slowly. Faster with the CLI:"}</div><pre class="cli-cmd">${escapeHtml(cliCommand(shape))}</pre>`;
+    } catch (err) {
+      apply.disabled = true;
+      form.querySelector("#param-preview")!.textContent = "Cấu hình không hợp lệ";
+      form.querySelector("#param-formula")!.textContent = err instanceof Error ? err.message : String(err);
+    }
   };
 
   const updateCorpusStats = () => {

@@ -1,0 +1,18 @@
+{
+  "step": 6132,
+  "viCurriculum": {
+    "corpusId": "vie_news_2020_100K:117757c4ee804a1f34a414d200d6df92474ac564d840b686a46c52ea0694929c",
+    "plannedEndStep": 9000,
+    "phase": "wikipedia",
+    "foundationSteps": 3000,
+    "targetSteps": 3000,
+    "wikiSeed": "https://vi.wikipedia.org/wiki/Tiếng_Việt",
+    "chatSteps": 3000,
+    "chatTargetSteps": 3000
+  },
+  "loss": 1.4995269775390625,
+  "valLoss": 1.4562087059020996,
+  "valAcc": 0.5821747765640516,
+  "exportedAt": "2026-10-03T07:52:26.883Z",
+  "label": "vi"
+}

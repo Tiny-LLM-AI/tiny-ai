@@ -1,30 +1,15 @@
 import * as tf from "@tensorflow/tfjs";
 
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
-  return Promise.race([promise, new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))]);
-}
-
-/**
- * Browser / worker backend selection. WebGL in a worker needs OffscreenCanvas and can hang,
- * so every attempt is time-boxed and CPU is the final fallback.
- */
+/** Browser chat and training require WebGL; never silently fall back to CPU. */
 export async function initTfBackend(): Promise<string> {
-  const inWorker = typeof (globalThis as { document?: unknown }).document === "undefined";
-  const canWebgl = !inWorker || typeof (globalThis as { OffscreenCanvas?: unknown }).OffscreenCanvas !== "undefined";
-  const order: string[] = canWebgl ? ["webgl", "cpu"] : ["cpu"];
-  for (const name of order) {
-    try {
-      if (name === "webgl") await import("@tensorflow/tfjs-backend-webgl");
-      const ok = await withTimeout(tf.setBackend(name), 4000);
-      if (ok) {
-        await tf.ready();
-        return tf.getBackend();
-      }
-    } catch {
-      // try next backend
-    }
+  try {
+    await import("@tensorflow/tfjs-backend-webgl");
+    tf.env().set("WEBGL_CPU_FORWARD", false);
+    if (!(await tf.setBackend("webgl"))) throw new Error("WebGL unavailable");
+    await tf.ready();
+    if (tf.getBackend() !== "webgl") throw new Error("WebGL not selected");
+    return tf.getBackend();
+  } catch (error) {
+    throw new Error(`Không khởi tạo được GPU WebGL. Bật hardware acceleration trong trình duyệt và kiểm tra driver GPU. ${error instanceof Error ? error.message : String(error)}`);
   }
-  await tf.setBackend("cpu");
-  await tf.ready();
-  return tf.getBackend();
 }

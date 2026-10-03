@@ -1,6 +1,6 @@
 import * as tf from "@tensorflow/tfjs";
 import type { GptConfig } from "./config.js";
-import { createModel, paramSpecs, type GptModel } from "./gpt.js";
+import { createModel, disposeModel, paramSpecs, type GptModel } from "./gpt.js";
 import { tokenizerFromVocab } from "./tokenizer.js";
 
 export const MODEL_FORMAT = "tiny-gpt/v1";
@@ -28,6 +28,9 @@ export function exportWeights(model: GptModel): Float32Array {
 }
 
 export function importWeights(model: GptModel, flat: Float32Array): void {
+  const expected = [...model.params.values()].reduce((sum, v) => sum + v.size, 0);
+  if (expected !== flat.length) throw new Error(`Weight size mismatch: expected ${expected}, got ${flat.length}`);
+  if (flat.some((value) => !Number.isFinite(value))) throw new Error("Weights contain NaN or Infinity.");
   let offset = 0;
   for (const v of model.params.values()) {
     const slice = flat.subarray(offset, offset + v.size);
@@ -55,6 +58,11 @@ export function serializeModel(model: GptModel): { manifest: ModelManifest; weig
 export function deserializeModel(manifest: ModelManifest, weights: Float32Array): GptModel {
   if (manifest.format !== MODEL_FORMAT) throw new Error(`Unsupported model format ${manifest.format}`);
   const model = createModel(manifest.config, tokenizerFromVocab(manifest.vocab));
-  importWeights(model, weights);
-  return model;
+  try {
+    importWeights(model, weights);
+    return model;
+  } catch (err) {
+    disposeModel(model);
+    throw err;
+  }
 }

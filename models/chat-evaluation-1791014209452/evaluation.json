@@ -1,0 +1,130 @@
+{
+  "source": "models/vi-step6140-2026-10-03-07-56-36-daba8afc",
+  "config": {
+    "layers": 4,
+    "dModel": 128,
+    "heads": 4,
+    "ffnSize": 512,
+    "contextLength": 64,
+    "learningRate": 0.0003,
+    "batchSize": 32,
+    "dropout": 0,
+    "seed": 42,
+    "vocabSize": 229
+  },
+  "checkpoints": [
+    {
+      "step": 0,
+      "answers": [
+        {
+          "question": "xin chào",
+          "answer": " “Theo đó có thể thấy chúng tôi chỉ có thể thấy thế người thân lực thi đấu trong thời gian"
+        },
+        {
+          "question": "bạn là ai",
+          "answer": " “Theo đó có thể thấy chúng tôi có thể thấy thế này có thể thay đổi cho biết những người d"
+        },
+        {
+          "question": "bạn khỏe không",
+          "answer": " “Theo đó có thể thấy chúng tôi chỉ có thể thấy thế người thân lực thi đấu trong thời gian"
+        },
+        {
+          "question": "chào bạn",
+          "answer": " “Tôi chỉ có thể chia sẻ thi đấu trong thời gian thi đấu trong thời gian thiệp thuộc vào t"
+        },
+        {
+          "question": "bạn tên gì",
+          "answer": " “Theo đó có thể thay đổi cho người dân cho biết thời gian thi đấu trong thời gian thiệp t"
+        },
+        {
+          "question": "cảm ơn",
+          "answer": " “Theo đó có thể thấy chúng tôi chỉ có thể thấy thế người thân lực thi đấu trong thời gian"
+        },
+        {
+          "question": "chào nhé",
+          "answer": " “Theo đó có thể thấy chúng tôi chỉ có thể thấy thế người thân lực thi đấu trong thời gian"
+        },
+        {
+          "question": "bạn có khỏe không",
+          "answer": " “Theo đó có thể thấy thế này có thể thay đổi cho biết những người dân thành công thức cho"
+        }
+      ]
+    },
+    {
+      "step": 250,
+      "loss": 0.0990285873413086,
+      "answers": [
+        {
+          "question": "xin chào",
+          "answer": " Xin chào! Tôi có thể giúp gì cho bạn?"
+        },
+        {
+          "question": "bạn là ai",
+          "answer": " Được, tôi sẽ trả lời bằng tiếng Việt."
+        },
+        {
+          "question": "bạn khỏe không",
+          "answer": " Tôi khỏe, cảm ơn bạn. Còn bạn thì sao?"
+        },
+        {
+          "question": "chào bạn",
+          "answer": " Chào bạn! Rất vui được trò chuyện cùng bạn."
+        },
+        {
+          "question": "bạn tên gì",
+          "answer": " Tôi là trợ lý tiếng Việt của dự án này."
+        },
+        {
+          "question": "cảm ơn",
+          "answer": " Không có gì, rất vui được giúp bạn."
+        },
+        {
+          "question": "chào nhé",
+          "answer": " Không có gì nhé!"
+        },
+        {
+          "question": "bạn có khỏe không",
+          "answer": " Tôi khỏe, cảm ơn bạn. Còn bạn thì sao?"
+        }
+      ]
+    },
+    {
+      "step": 500,
+      "loss": 0.09319474548101425,
+      "answers": [
+        {
+          "question": "xin chào",
+          "answer": " Xin chào! Tôi có thể giúp gì cho bạn?"
+        },
+        {
+          "question": "bạn là ai",
+          "answer": " Được, tôi sẽ trả lời ngắn gọn và dễ hiểu."
+        },
+        {
+          "question": "bạn khỏe không",
+          "answer": " Tôi khỏe, cảm ơn bạn. Còn bạn thì sao?"
+        },
+        {
+          "question": "chào bạn",
+          "answer": " Chào bạn! Rất vui được trò chuyện cùng bạn."
+        },
+        {
+          "question": "bạn tên gì",
+          "answer": " Tôi là trợ lý tiếng Việt của dự án này."
+        },
+        {
+          "question": "cảm ơn",
+          "answer": " Không có gì, rất vui được giúp bạn."
+        },
+        {
+          "question": "chào nhé",
+          "answer": " Không có gì nhé!"
+        },
+        {
+          "question": "bạn có khỏe không",
+          "answer": " Tôi khỏe, cảm ơn bạn. Còn bạn thì sao?"
+        }
+      ]
+    }
+  ]
+}

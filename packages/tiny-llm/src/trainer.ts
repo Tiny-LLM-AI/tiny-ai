@@ -1,6 +1,7 @@
 import * as tf from "@tensorflow/tfjs";
 import { sampleBatch } from "./batches.js";
-import { promptAndTarget } from "./corpus.js";
+import { encodeLines, promptAndTarget } from "./corpus.js";
+import type { Tokenizer } from "./tokenizer.js";
 import { generate } from "./generate.js";
 import { forward, lossFromLogits, type GptModel } from "./gpt.js";
 import { mulberry32, type Rng } from "./random.js";
@@ -36,6 +37,17 @@ export class Trainer {
 
   /** One optimizer step; returns the batch loss. */
   trainStep(): number {
+    const value = this.trainStepTensor();
+    const loss = value.dataSync()[0];
+    value.dispose();
+    return loss;
+  }
+
+  /**
+   * One optimizer step without reading anything back from the device, so WebGL can
+   * queue several steps. Caller owns (and must dispose) the returned loss scalar.
+   */
+  trainStepTensor(): tf.Scalar {
     const { batchSize, contextLength } = this.model.config;
     const batch = sampleBatch(this.trainStream, batchSize, contextLength, this.rng);
     const x = tf.tensor2d(batch.x, [batchSize, contextLength], "int32");
@@ -45,11 +57,10 @@ export class Trainer {
     const { value, grads } = tf.variableGrads(() => lossFromLogits(forward(this.model, x, { training: true }), y), vars);
     const clipped = tf.tidy(() => {
       const names = Object.keys(grads);
-      const sq = names.map((n) => tf.sum(tf.square(grads[n])));
-      const norm = tf.sqrt(tf.addN(sq)).dataSync()[0];
-      const scale = norm > this.clipNorm ? this.clipNorm / (norm + 1e-6) : 1;
+      const norm = tf.sqrt(tf.addN(names.map((n) => tf.sum(tf.square(grads[n])))));
+      const scale = tf.minimum(1, tf.div(this.clipNorm, tf.add(norm, 1e-6)));
       const out: Record<string, tf.Tensor> = {};
-      for (const n of names) out[n] = scale === 1 ? grads[n].clone() : tf.mul(grads[n], scale);
+      for (const n of names) out[n] = tf.mul(grads[n], scale);
       return out;
     });
     this.optimizer.applyGradients(clipped as tf.NamedTensorMap);
@@ -61,14 +72,17 @@ export class Trainer {
       });
     }
 
-    const loss = value.dataSync()[0];
-    value.dispose();
     Object.values(grads).forEach((g) => g.dispose());
     Object.values(clipped).forEach((g) => g.dispose());
     x.dispose();
     y.dispose();
     this.step += 1;
-    return loss;
+    return value;
+  }
+
+  /** Replace the training token stream (e.g. when new wiki text is appended). */
+  setTrainLines(tokenizer: Tokenizer, lines: string[]): void {
+    this.trainStream = encodeLines(tokenizer, lines);
   }
 
   /** Average loss on held-out val windows. Returns -1 when there is no val set. */

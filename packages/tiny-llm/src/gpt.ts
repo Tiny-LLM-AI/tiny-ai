@@ -288,7 +288,10 @@ export function embeddingRows(
 /** Compile shaders / warm caches so the first chat message is not a cold start. */
 export function warmupForward(model: GptModel): void {
   tf.tidy(() => {
-    forward(model, tf.tensor2d([[0, 1]], [1, 2], "int32"));
+    const input = tf.zeros([1, model.config.contextLength], "int32") as tf.Tensor2D;
+    const logits = forward(model, input);
+    // Complete shader compilation and weight upload before chat is enabled.
+    tf.softmax(logits.slice([0, 0, 0], [1, 1, model.config.vocabSize]).reshape([-1])).dataSync();
   });
 }
 

@@ -15,6 +15,8 @@ import {
   encode,
   encodeLines,
   forward,
+  generate,
+  generateAsync,
   generateArithmeticLines,
   normalizeConfig,
   paramCount,
@@ -28,6 +30,22 @@ import {
 } from "../src/index.js";
 
 const TINY: GptConfig = { ...DEFAULT_CONFIG, contextLength: 12, dModel: 16, layers: 2, heads: 2, ffnSize: 32, batchSize: 8 };
+
+it("fixed-size asynchronous inference preserves causal predictions and releases tensors", async () => {
+  const tokenizer = buildTokenizer("xin chào 123456789");
+  const model = createModel({ ...TINY, vocabSize: tokenizer.vocab.length }, tokenizer);
+  try {
+    const count = tf.memory().numTensors;
+    for (const prompt of ["x", "xin chào", "xin chào 123456789"]) {
+      const options = { maxNewTokens: 15, temperature: 0 };
+      const expected = generate(model, prompt, options);
+      const actual = await generateAsync(model, prompt, options);
+      expect(actual.text).toBe(expected.text);
+      expect(actual.steps.map(s => s.chosenId)).toEqual(expected.steps.map(s => s.chosenId));
+    }
+    expect(tf.memory().numTensors).toBe(count);
+  } finally { disposeModel(model); }
+});
 
 beforeAll(async () => {
   await tf.setBackend("cpu");

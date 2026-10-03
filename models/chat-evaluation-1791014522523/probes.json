@@ -1,0 +1,109 @@
+{
+  "results": [
+    {
+      "question": "xin chào",
+      "answer": " Xin chào! Tôi có thể giúp gì cho bạn?"
+    },
+    {
+      "question": "bạn là ai",
+      "answer": " Tôi là trợ lý tiếng Việt của dự án này."
+    },
+    {
+      "question": "bạn khỏe không",
+      "answer": " Tôi khỏe, cảm ơn bạn. Còn bạn thì sao?"
+    },
+    {
+      "question": "xin chào bạn",
+      "answer": " Chào bạn! Rất vui được trò chuyện cùng bạn."
+    },
+    {
+      "question": "Bạn là ai?",
+      "answer": " Tôi là trợ lý tiếng Việt của dự án này."
+    },
+    {
+      "question": "cho mình biết bạn là ai",
+      "answer": " Tôi là trợ lý tiếng Việt của dự án này."
+    },
+    {
+      "question": "hôm nay bạn khỏe không",
+      "answer": " Tôi khỏe, cảm ơn bạn. Còn bạn thì sao?"
+    },
+    {
+      "question": "chào nhé",
+      "answer": " Không có gì nhé!"
+    },
+    {
+      "question": "tên của bạn là gì",
+      "answer": " Tôi có thể trả lời câu hỏi đơn giản và hỗ trợ bạn học tập."
+    },
+    {
+      "question": "bạn bao nhiêu tuổi",
+      "answer": " Tôi sẽ giải thích lại bằng cách đơn giản hơn."
+    },
+    {
+      "question": "2 cộng 3 bằng bao nhiêu?",
+      "answer": " Tôi là trợ lý tiếng Việt của dự án này."
+    }
+  ],
+  "sampled": [
+    {
+      "question": "xin chào",
+      "seed": 1,
+      "answer": " Xin chào! Tôi có thể giúp gì cho bạn?"
+    },
+    {
+      "question": "xin chào",
+      "seed": 2,
+      "answer": " Xin chào! Tôi có thể giúp gì cho bạn?"
+    },
+    {
+      "question": "xin chào",
+      "seed": 3,
+      "answer": " Xin chào! Tôi có thể giúp gì cho bạn?"
+    },
+    {
+      "question": "bạn là ai",
+      "seed": 1,
+      "answer": " Tôi là trợ lý tiếng Việt của dự án này."
+    },
+    {
+      "question": "bạn là ai",
+      "seed": 2,
+      "answer": " Tôi là trợ lý tiếng Việt của dự án này."
+    },
+    {
+      "question": "bạn là ai",
+      "seed": 3,
+      "answer": " Tôi là trợ lý tiếng Việt của dự án này."
+    },
+    {
+      "question": "bạn khỏe không",
+      "seed": 1,
+      "answer": " Tôi khỏe, cảm ơn bạn. Còn bạn thì sao?"
+    },
+    {
+      "question": "bạn khỏe không",
+      "seed": 2,
+      "answer": " Tôi khỏe, cảm ơn bạn. Còn bạn thì sao?"
+    },
+    {
+      "question": "bạn khỏe không",
+      "seed": 3,
+      "answer": " Tôi khỏe, cảm ơn bạn. Còn bạn thì sao?"
+    }
+  ],
+  "conversation": [
+    {
+      "question": "xin chào",
+      "answer": " Xin chào! Tôi có thể giúp gì cho bạn?"
+    },
+    {
+      "question": "bạn là ai",
+      "answer": " Tôi là trợ lý tiếng Việt của dự án này."
+    },
+    {
+      "question": "bạn khỏe không",
+      "answer": " Tôi khỏe, cảm ơn bạn. Còn bạn thì sao?"
+    }
+  ]
+}

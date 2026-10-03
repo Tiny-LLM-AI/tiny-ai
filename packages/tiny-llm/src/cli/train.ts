@@ -26,7 +26,7 @@ const HELP = `Usage: npm run train:tiny -- [options]
   --preset mini|small|medium|large|xl   Model size preset (default mini)
   --target-params 50000000               Auto-fill layers/width for this many params
   --layers N --d-model N --heads N --ffn N --context N
-  --lr 0.001 --batch 32
+  --lr 0.001 --batch 32 --dropout 0 --seed 42
   --corpus path.txt|path.json            Training text (one line per document)
   --max-number 9                         Without --corpus: generate arithmetic 0..N
   --steps 2000                           Optimizer steps
@@ -43,6 +43,11 @@ if (args.help) {
 
 const baseDir = process.env.INIT_CWD ?? process.cwd();
 const resolvePath = (p: string) => (path.isAbsolute(p) ? p : path.resolve(baseDir, p));
+
+if (args.resume && !args.corpus) {
+  console.error("Resume requires --corpus: choose your training data explicitly to avoid switching a Vietnamese model to arithmetic.");
+  process.exit(1);
+}
 
 const lines = args.corpus
   ? readCorpusFile(resolvePath(args.corpus))
@@ -72,6 +77,8 @@ if (args.resume) {
   if (args.ffn) cfg.ffnSize = Number(args.ffn);
   if (args.lr) cfg.learningRate = Number(args.lr);
   if (args.batch) cfg.batchSize = Number(args.batch);
+  if (args.dropout) cfg.dropout = Number(args.dropout);
+  if (args.seed) cfg.seed = Number(args.seed);
   cfg = normalizeConfig(cfg);
 
   const mem = memoryEstimate(cfg);

@@ -1,9 +1,12 @@
+import { randomUUID } from "node:crypto";
+import type { ViCurriculum } from "./vi-curriculum.js";
 import fs from "node:fs";
 import path from "node:path";
 import type { GptModel } from "./gpt.js";
 import { serializeModel, type ModelManifest } from "./model-io.js";
 
 export const EXPORTS_DIR = "models/exports";
+export const MODELS_DIR = "models";
 
 export interface ModelExportMeta {
   version: string;
@@ -13,6 +16,17 @@ export interface ModelExportMeta {
   valAcc: number;
   exportedAt: string;
   label?: string;
+  viCurriculum?: ViCurriculum;
+}
+
+export interface SavedModelMeta {
+  step: number;
+  loss: number;
+  valLoss: number;
+  valAcc: number;
+  exportedAt: string;
+  label?: string;
+  viCurriculum?: ViCurriculum;
 }
 
 export interface ExportIndexEntry {
@@ -24,8 +38,11 @@ export interface ExportIndexEntry {
   valAcc: number;
   exportedAt: string;
   label?: string;
+  viCurriculum?: ViCurriculum;
   parameterCount: number;
   path: string;
+  vocabSize?: number;
+  viCharset?: boolean;
 }
 
 export interface ExportIndex {
@@ -108,8 +125,48 @@ export function upsertExportIndex(
 export interface SaveExportInput {
   manifest: ModelManifest;
   weights: Float32Array;
-  meta: Omit<ModelExportMeta, "version"> & { label?: string };
+  meta: Omit<SavedModelMeta, never> & { label?: string };
   label?: string;
+  viCurriculum?: ViCurriculum;
+}
+
+function writeModelFiles(
+  dir: string,
+  input: SaveExportInput,
+  meta: SavedModelMeta & { version?: string },
+): void {
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, "model.json"),
+    JSON.stringify(input.manifest, null, 2),
+  );
+  fs.writeFileSync(
+    path.join(dir, "weights.bin"),
+    Buffer.from(
+      input.weights.buffer,
+      input.weights.byteOffset,
+      input.weights.byteLength,
+    ),
+  );
+  fs.writeFileSync(path.join(dir, "meta.json"), JSON.stringify(meta, null, 2));
+}
+
+export function defaultSaveFolderName(step: number, label = "vi"): string {
+  return `${label}-step${step}-${stamp()}-${randomUUID().slice(0, 8)}`;
+}
+
+/** Save like CLI `--out models/my-model`: model.json + weights.bin in models/<name>/ */
+export function saveModelToFolder(
+  input: SaveExportInput,
+  folderName: string,
+  baseDir = repoRoot(),
+): { id: string; dir: string; path: string } {
+  const dir = path.join(baseDir, MODELS_DIR, folderName);
+  writeModelFiles(dir, input, {
+    ...input.meta,
+    label: input.label ?? input.meta.label,
+  });
+  return { id: folderName, dir, path: path.relative(baseDir, dir) };
 }
 
 export function saveVersionedExport(
@@ -128,19 +185,7 @@ export function saveVersionedExport(
     label: input.label ?? input.meta.label,
   };
 
-  fs.writeFileSync(
-    path.join(dir, "model.json"),
-    JSON.stringify(input.manifest, null, 2),
-  );
-  fs.writeFileSync(
-    path.join(dir, "weights.bin"),
-    Buffer.from(
-      input.weights.buffer,
-      input.weights.byteOffset,
-      input.weights.byteLength,
-    ),
-  );
-  fs.writeFileSync(path.join(dir, "meta.json"), JSON.stringify(meta, null, 2));
+  writeModelFiles(dir, input, meta);
   fs.writeFileSync(
     path.join(dir, "README.txt"),
     [
@@ -183,12 +228,71 @@ export function saveModelVersioned(
   return saveVersionedExport({ manifest, weights, meta, label }, baseDir);
 }
 
-export function resolveExportDir(idOrPrefix: string, baseDir = repoRoot()): string {
-  const root = exportsRoot(baseDir);
-  const direct = path.join(root, idOrPrefix);
+export function listSavedModels(baseDir = repoRoot()): ExportIndexEntry[] {
+  const root = path.join(baseDir, MODELS_DIR);
+  if (!fs.existsSync(root)) return [];
+  return fs
+    .readdirSync(root, { withFileTypes: true })
+    .filter(
+      (d) =>
+        d.isDirectory() &&
+        d.name !== "exports" &&
+        fs.existsSync(path.join(root, d.name, "model.json")),
+    )
+    .map((d) => {
+      const dir = path.join(root, d.name);
+      const manifest = JSON.parse(
+        fs.readFileSync(path.join(dir, "model.json"), "utf8"),
+      ) as ModelManifest;
+      let meta: Partial<SavedModelMeta> = {};
+      const metaFile = path.join(dir, "meta.json");
+      if (fs.existsSync(metaFile)) {
+        meta = JSON.parse(fs.readFileSync(metaFile, "utf8")) as SavedModelMeta;
+      }
+      const vocabSize = manifest.vocab.length;
+      return {
+        id: d.name,
+        version: d.name,
+        step: meta.step ?? 0,
+        loss: meta.loss ?? -1,
+        valLoss: meta.valLoss ?? -1,
+        valAcc: meta.valAcc ?? -1,
+        exportedAt: meta.exportedAt ?? "",
+        label: meta.label,
+        parameterCount: manifest.parameterCount,
+        path: path.relative(baseDir, dir),
+        vocabSize,
+        viCharset: vocabSize > 100 && manifest.vocab.includes("đ"),
+      } satisfies ExportIndexEntry;
+    })
+    .sort((a, b) => b.id.localeCompare(a.id));
+}
+
+export function resolveModelDir(idOrPrefix: string, baseDir = repoRoot()): string {
+  const modelsRoot = path.join(baseDir, MODELS_DIR);
+  const direct = path.join(modelsRoot, idOrPrefix);
   if (fs.existsSync(path.join(direct, "model.json"))) return direct;
 
-  const index = readExportIndex(root);
+  if (fs.existsSync(modelsRoot)) {
+    const dirs = fs
+      .readdirSync(modelsRoot, { withFileTypes: true })
+      .filter((d) => d.isDirectory() && d.name !== "exports")
+      .map((d) => d.name)
+      .sort()
+      .reverse();
+    const match = dirs.find(
+      (name) => name === idOrPrefix || name.startsWith(idOrPrefix),
+    );
+    if (match && fs.existsSync(path.join(modelsRoot, match, "model.json"))) {
+      return path.join(modelsRoot, match);
+    }
+  }
+
+  const exportRoot = exportsRoot(baseDir);
+  const exportDirect = path.join(exportRoot, idOrPrefix);
+  if (fs.existsSync(path.join(exportDirect, "model.json"))) return exportDirect;
+
+  const index = readExportIndex(exportRoot);
   const exact = index.exports.find(
     (e) => e.id === idOrPrefix || e.version === idOrPrefix,
   );
@@ -197,22 +301,27 @@ export function resolveExportDir(idOrPrefix: string, baseDir = repoRoot()): stri
   const prefix = index.exports.find((e) => e.id.startsWith(idOrPrefix));
   if (prefix) return path.join(baseDir, prefix.path);
 
-  if (!fs.existsSync(root)) {
-    throw new Error(`No exports in ${EXPORTS_DIR}. Train and export first.`);
+  if (fs.existsSync(exportRoot)) {
+    const dirs = fs
+      .readdirSync(exportRoot, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name)
+      .sort()
+      .reverse();
+    const match = dirs.find(
+      (name) => name === idOrPrefix || name.startsWith(idOrPrefix),
+    );
+    if (match && fs.existsSync(path.join(exportRoot, match, "model.json"))) {
+      return path.join(exportRoot, match);
+    }
   }
-  const dirs = fs
-    .readdirSync(root, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
-    .map((d) => d.name)
-    .sort()
-    .reverse();
-  const match = dirs.find(
-    (name) => name === idOrPrefix || name.startsWith(idOrPrefix),
-  );
-  if (match && fs.existsSync(path.join(root, match, "model.json"))) {
-    return path.join(root, match);
-  }
-  throw new Error(`Export not found: ${idOrPrefix}. Run: npm run models:list`);
+
+  throw new Error(`Model not found: ${idOrPrefix}. Run: npm run models:list`);
+}
+
+/** @deprecated use resolveModelDir */
+export function resolveExportDir(idOrPrefix: string, baseDir = repoRoot()): string {
+  return resolveModelDir(idOrPrefix, baseDir);
 }
 
 export function listExports(baseDir = repoRoot()): ExportIndexEntry[] {

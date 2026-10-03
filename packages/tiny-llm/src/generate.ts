@@ -19,6 +19,7 @@ export interface GenerateOptions {
 }
 
 export interface GenerateAsyncOptions extends GenerateOptions {
+  signal?: AbortSignal;
   /** Called after each token; use for streaming UI. */
   onStep?: (
     step: GenerateStep,
@@ -148,6 +149,7 @@ export async function generateAsync(
     topK = 0,
     seed = 1,
     onStep,
+    signal,
   } = opts;
   const rng = mulberry32(seed);
   const promptIds = [BOS_ID, ...encode(model.tokenizer, prompt)];
@@ -157,11 +159,13 @@ export async function generateAsync(
 
   for (let i = 0; i < maxNewTokens; i += 1) {
     await yieldToMain();
+    if (signal?.aborted) break;
     const window = contextWindow(ids, model.config.contextLength);
-    const probs = tf.tidy(() => {
+    const padded = [...window, ...Array(model.config.contextLength - window.length).fill(PAD_ID)];
+    const probabilityTensor = tf.tidy(() => {
       const logits = forward(
         model,
-        tf.tensor2d([window], [1, window.length], "int32"),
+        tf.tensor2d([padded], [1, padded.length], "int32"),
       );
       const last = tf.reshape(
         tf.slice(
@@ -171,8 +175,11 @@ export async function generateAsync(
         ),
         [-1],
       );
-      return tf.softmax(last).dataSync() as Float32Array;
+      return tf.softmax(last);
     });
+    let probs: Float32Array;
+    try { probs = await probabilityTensor.data() as Float32Array; }
+    finally { probabilityTensor.dispose(); }
     const chosenId = pick(probs, temperature, topK, rng);
     const top = Array.from(probs, (prob, id) => ({
       id,

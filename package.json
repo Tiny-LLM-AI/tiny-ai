@@ -2,7 +2,7 @@
   "name": "math-llm-mini",
   "version": "3.0.0",
   "private": true,
-  "description": "Learn how LLMs work at the matrix level: Tiny LLM (minimal) and Full Follow LLM (Transformer), each with its own web UI.",
+  "description": "Character-level GPT in TypeScript and TensorFlow.js, with a Vite training UI and Node CLI.",
   "workspaces": [
     "packages/*"
   ],
@@ -16,7 +16,11 @@
     "start:model": "npm run start-model -w @math-llm/tiny-llm --",
     "resume:tiny": "npm run train -w @math-llm/tiny-llm -- --resume",
     "verify:tiny": "npm run verify -w @math-llm/tiny-llm",
-    "test:tiny": "npm run test -w @math-llm/tiny-llm"
+    "test:tiny": "npm run test -w @math-llm/tiny-llm",
+    "fetch:vi-corpus": "node scripts/fetch-vi-corpus.mjs",
+    "fetch:vi-foundation": "python3 scripts/prepare-vi-foundation.py",
+    "prepare:vi-chat": "python3 scripts/prepare-vi-chat-corpus.py",
+    "train:vi-chat": "npm run prepare:vi-chat && npm run train:tiny -- --corpus train-data/vi-chat-training.txt --steps 1000 --resume models/vi-foundation-cli --out models/vi-chat"
   },
   "engines": {
     "node": ">=22"

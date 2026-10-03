@@ -1,0 +1,15 @@
+{
+  "id": "vie_news_2020_100K",
+  "language": "vi",
+  "source": "https://downloads.wortschatz-leipzig.de/corpora/vie_news_2020_100K.tar.gz",
+  "sourcePage": "https://corpora.uni-leipzig.de/en?corpusId=vie_news_2020",
+  "terms": "https://wortschatz.uni-leipzig.de/en/usage",
+  "licenseVerification": "Official terms page blocked by bot challenge during download; archive has no license file. No license grant inferred.",
+  "rawSentences": 100000,
+  "acceptedSentences": 81995,
+  "bytes": 13221281,
+  "sha256": "117757c4ee804a1f34a414d200d6df92474ac564d840b686a46c52ea0694929c",
+  "archiveSha256": "7ce0b3643899cc7f22596369e99ded474751396b3bc698002a3a70dc454ba9a4",
+  "preprocessing": "NFC, whitespace, 40..600 chars, reject URLs/email/HTML/non-Latin letters, >=8% VI diacritics, >=2 VI common words, exact deduplication",
+  "languageCaveat": "Vietnamese source plus heuristic filtering; names/loanwords may remain. Not a certified language detector."
+}

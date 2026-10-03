@@ -4,9 +4,9 @@ export const HINT = {
   flow: "text → tokens → embeddings → N × (attention + MLP) → next-token probabilities → pick → repeat",
   chat: "Type anything and press Enter.",
   train:
-    "Runs until Stop. When you Stop, model auto-exports as .zip (model.json + weights.bin). Train again continues from current weights.",
+    "Runs until Stop. When you Stop, model is saved to models/ (model.json + weights.bin). Train again continues from current weights.",
   exportModel:
-    "Each export → models/exports/v001-stepN-…/ (model.json + weights.bin + meta.json). List: npm run models:list",
+    "Save → models/vi-stepN-…/ (model.json + weights.bin + meta.json). List: npm run models:list",
   stats: "",
   statsChart: "",
   preset: "Pick a size, or type a target parameter count and press Auto-fill.",
@@ -23,9 +23,9 @@ export const HINT = {
   corpus:
     "One line = one document. Any language: arithmetic, Vietnamese, English, code…",
   vietnamese:
-    "Load sample or fetch one article into the corpus manually. For continuous Wikipedia training use Start Vietnamese training on the main page.",
+    "Load sample or fetch one article into the corpus manually. Use the main page for foundation corpus training followed by Vietnamese Wikipedia.",
   viTrain:
-    "Fetches one vi.wikipedia article (text only), trains N steps on it while the next linked article is prefetched, then continues on the new article with the same weights. Stop saves a version.",
+    "Bước 1: corpus tiếng Việt có sẵn → tự dừng/lưu đủ số bước. Bước 2: nhập link vi.wikipedia.org để học thêm trên cùng weights. Load để tiếp tục checkpoint.",
   wikiUrl:
     "Paste a vi.wikipedia.org article link. Text is downloaded and split into lines (one sentence per line).",
   apply:

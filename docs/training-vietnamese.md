@@ -1,97 +1,75 @@
-# Training tiếng Việt (Tiny GPT)
+# Training tiếng Việt: ký tự nền → hội thoại cơ bản → Wikipedia
 
-Hướng dẫn dựa trên thực hành chuẩn **causal language modeling** (cùng mục tiêu GPT) và **curriculum learning** (học dần từ dễ → khó). Tham khảo:
+## Dữ liệu đã có
 
-- [Karpathy — makemore / char-level LM](https://github.com/karpathy/makemore) — mô hình ký tự, vocab tự build từ corpus
-- [Radford et al. — Language Models are Unsupervised Multitask Learners (GPT-2)](https://d4mucfpksywv.cloudfront.net/better-language-models/language_models_are_unsupervised_multitask_learners.pdf) — pretrain trên web text trước khi dùng
-- [MediaWiki API — extracts & links](https://www.mediawiki.org/wiki/API:Main_page) — nguồn vi.wikipedia (read-only)
-- [Bengio et al. — Curriculum Learning](https://ronan.collobert.com/pub/import/2009_curriculum_icml.pdf) — train mẫu dễ trước, khó sau
+`train-data/vi-foundation.txt`: 81.995 câu, khoảng 13,2 MB, lọc từ bản **Vietnamese News 2020 — 100K** của Leipzig Corpora Collection. Xem [nguồn, xử lý và giấy phép](../train-data/README.md). Chỉ chọn nguồn tiếng Việt, không ghép corpus tiếng Anh/song ngữ; bộ lọc không bảo đảm loại bỏ mọi tên riêng/từ ngoại lai.
 
-## Mục tiêu
+Nếu thiếu file, chạy `npm run fetch:vi-foundation` (Python 3, lần đầu cần mạng).
 
-Tiny GPT là **character-level** (mỗi token = 1 ký tự). Với tiếng Việt, model học theo thứ tự:
+## Luồng UI được hỗ trợ
 
-1. **Chính tả & dấu** — `a`, `ă`, `â`, `đ`, `ư`, `ơ`…
-2. **Từ & cụm từ ngắn** — câu mẫu, hội thoại
-3. **Ngữ cảnh dài** — đoạn văn Wikipedia (sự kiện, địa danh, khái niệm)
+```mermaid
+flowchart LR
+    Local[Corpus tiếng Việt trên máy] --> Split[Chia train và hold-out cố định]
+    Split --> Base[1. Train corpus nền]
+    Base --> Save[Đủ số bước → dừng và lưu]
+    Save --> Link[Nhập link vi.wikipedia.org]
+    Link --> Wiki[2. Train tiếp cùng weights]
+    Local --> Replay[Giữ dữ liệu nền để hạn chế quên]
+    Replay --> Wiki
+    Wiki --> More[Thêm các bài liên quan]
+```
 
-## Một nút trong UI (khuyến nghị)
+1. Chạy `npm run dev:tiny`, mở `http://localhost:5200`.
+2. Nếu muốn tiếp tục model, chọn **Load** trước. Model cũ không có metadata curriculum bắt đầu đếm tiến độ corpus nền từ 0; tổng step cũ vẫn được giữ.
+3. Nhập **Số bước corpus nền**, mặc định 3.000, bấm **1. Train corpus tiếng Việt**. Chỉ đọc file local; chưa gọi Wikipedia.
+4. Đủ số bước, Worker dừng chính xác ở mốc và UI lưu checkpoint. Có thể Pause/Resume hoặc Stop/Load để tiếp tục phần còn lại. Muốn luyện thêm, tăng mốc tổng bước corpus nền rồi bấm bước 1.
+5. Xem câu model sinh và validation. Mốc bước chỉ là kế hoạch luyện tập, không chứng nhận “đã hiểu tiếng Việt”.
+6. Nhập link, ví dụ `https://vi.wikipedia.org/wiki/Hà_Nội`, bấm **2. Train tiếp Wikipedia**. Nút chỉ mở khi đã đạt mốc corpus nền; URL ngoại ngữ bị từ chối.
+7. Giai đoạn 2 giữ model/vocab/weights, nạp lại corpus nền và thêm bài Wikipedia. Hold-out nền được tái tạo cố định, không đưa vào train. Tiếp tục crawl các bài liên quan đến khi Stop hoặc hết nguồn truy cập được.
+Phase hội thoại phải chạy sau foundation và trước Wikipedia. Dữ liệu mẫu nằm ở [`train-data/vi-chat-basic.txt`](../train-data/vi-chat-basic.txt). Mỗi dòng là một cặp `Người dùng ... = Trợ lý ...`; Đánh giá câu trả lời định kỳ; số bước không phải chứng nhận hiểu tiếng Việt.
 
-Ở màn hình chính, ô **Train** → nhập link bài bắt đầu (mặc định `Tiếng_Việt`) và số step mỗi bài (mặc định 300) → **Start Vietnamese training**.
+Model giữ cấu hình dynamic đã chọn trong Settings (layers, width, heads, FFN, context, batch, LR, dropout), chỉ thay vocab sang charset tiếng Việt cố định khi cần. Nếu đã Load model có charset VI thì giữ model đó. Không tự chọn checkpoint bất kỳ chỉ vì checkpoint ấy có step cao.
 
-Mỗi đợt:
+## Lưu và khôi phục
 
-1. Lấy text thuần của 1 bài vi.wikipedia và train ngay
-2. Trong lúc train, prefetch sẵn bài tiếp theo (đi theo link trong các bài đã đọc)
-3. Đủ số step thì nạp bài mới, cộng thêm một phần câu của bài cũ (replay, chống quên), train tiếp trên cùng weights
-4. Lặp cho tới khi bấm **Stop**, lúc đó model được lưu thành 1 version trong `models/exports/`
+UI lưu `models/<tên>/model.json`, `weights.bin`, `meta.json`. Metadata có `viCurriculum`: corpus fingerprint, phase, số bước nền, mốc bước nền và link Wikipedia. Pause/Resume cùng phiên giữ Worker và optimizer/RNG. Stop/Load dùng optimizer mới vì checkpoint không lưu Adam/RNG/corpus; khi load, corpus nền và hold-out được tái tạo từ file đã pin, còn Wikipedia được tải lại khi bấm bước 2.
 
-Vocab cố định (bảng chữ cái tiếng Việt có dấu, chữ số, dấu câu) nên weights dùng tiếp được qua mọi bài; ký tự ngoài vocab bị bỏ. Lần đầu bấm Start nếu model hiện tại dùng vocab khác thì model được tạo lại theo vocab này.
+Vite dev/preview phục vụ corpus qua `GET /api/corpus/vi-foundation`; không sao chép 13 MB dữ liệu vào bundle web. Lưu/load cần API Vite. Mất mạng không ảnh hưởng việc đọc corpus nền nếu backend TF.js sẵn có; backend WASM có thể cần tải binary từ CDN.
 
-## CLI (corpus lớn hơn)
+## CLI cơ bản
 
 ```bash
-# Phase 1: câu mẫu
-npm run train:tiny -- --preset small --corpus train-data/vi-sample.txt --steps 3000 --out models/vi-phase1
-
-# Phase 2: thêm Wikipedia (gộp file .txt, một dòng = một câu/đoạn)
-npm run train:tiny -- --resume models/vi-phase1 --corpus train-data/vi-wiki.txt --steps 10000 --out models/vi-phase2
-
-# Chat thử
-npm run chat:tiny -- --model models/vi-phase2 --temperature 0.8
+npm run train:tiny -- --preset small --corpus train-data/vi-foundation.txt --steps 3000 --out models/vi-foundation-cli
+npm run fetch:vi-corpus -- --articles 30
+npm run train:tiny -- --resume models/vi-foundation-cli --corpus train-data/vi-wikipedia.txt --steps 3000 --out models/vi-wiki-cli
+npm run train:vi-chat  # chuẩn bị corpus hội thoại riêng rồi fine-tune checkpoint
 ```
 
-Corpus format: `.txt` — **mỗi dòng một ví dụ** (một câu hoặc một đoạn). Vocab build tự động (NFC), không cần tokenizer riêng.
+Đây là CLI tổng quát: vocab build từ corpus đầu; ký tự lạ trong corpus sau thành UNK, không tự mở rộng vocab. CLI không điều phối curriculum/giữ replay như UI và không ghi chứng nhận hoàn tất giai đoạn nền để mở nút Wikipedia. Muốn đúng luồng hai giai đoạn, charset cố định và replay đã tích hợp, dùng UI. Resume CLI bắt buộc `--corpus` để tránh vô tình train model tiếng Việt bằng phép tính.
 
-## Dev với auto-reload
+UI báo độ chính xác ký tự hold-out; CLI hiện báo độ chính xác toàn phần tiếp nối. Không so sánh trực tiếp hai metric.
+
+## Kiểm tra thay đổi
 
 ```bash
-npm run dev:tiny:watch   # Vite HMR + tsc --watch cho tiny-llm
-npm run dev:tiny         # chỉ Vite (đã alias trực tiếp src tiny-llm)
+npm run test:tiny
+npm run build
 ```
 
-## Kỳ vọng thực tế
+Mục tiêu là mô hình thử nghiệm học ký tự/từ/câu. Dataset này và Wikipedia không tự biến model nhỏ thành chatbot hiểu yêu cầu hay trả lời kiến thức đáng tin cậy.
 
-| Corpus | Model | Kết quả thường thấy |
-|--------|-------|---------------------|
-| vi-sample (~ vài chục dòng) | mini/small | Nhận dấu, vài từ |
-| 1–5 MB text VI | small/medium | Câu ngắn có nghĩa |
-| 10 MB+ (Wikipedia + sách) | medium/large (CLI) | Đoạn văn mạch lạc hơn |
+Khi đang train, bấm Pause để chat bằng weights mới nhất. Save/Load/đổi cấu hình được khóa trong các thao tác xung đột; Load lỗi giữ nguyên model đang có. Reset weights giữ kiến trúc/charset nhưng xóa tiến độ nền. UI chỉ hiển thị accuracy đo được, không có ngưỡng 85% chứng nhận khả năng ngôn ngữ.
 
-Model **mini** trong browser chỉ để học/h demo — không đủ capacity cho tiếng Việt “trôi chảy”. Dùng **small** trở lên + nhiều text.
 
-## Nguồn dữ liệu hợp lệ
+## Kiểm tra hội thoại thực tế
 
-- [vi.wikipedia.org](https://vi.wikipedia.org) — API `action=query&prop=extracts` (UI đã tích hợp)
-- [Wikimedia dumps](https://dumps.wikimedia.org/viwiki/) — dump XML cho training offline lớn
-- Sách/tin tức `.txt` tự thu thập (một dòng một câu)
+Phase chat dùng riêng dữ liệu hội thoại. Trước đây 33 dòng hội thoại bị trộn với gần 82.000 dòng tin tức, chỉ chiếm khoảng 0,028% ký tự; tăng step chủ yếu tiếp tục học tin tức. Validation nền vẫn đo trên tin tức để theo dõi thay đổi khả năng ngôn ngữ, không phải chat accuracy.
 
-Không cần gán nhãn — chỉ cần plain text; objective là predict next character.
-
-## Export model sau training
-
-Mỗi lần export → **1 folder riêng** trong `models/exports/`:
-
-```text
-models/exports/
-  index.json
-  v001-step120-2026-10-02-14-30-00/
-    model.json · weights.bin · meta.json · README.txt
-  v002-step500-…/
-```
-
-| Nơi train | Cách lưu |
-|-----------|----------|
-| **Browser** | **Stop** hoặc **Export version** → lưu `models/exports/v00N-…/` |
-| **CLI** | `--out models/mini` + tự thêm bản versioned trong `models/exports/` |
-
-### Xem lại & chạy lại model
+Chạy thử nghiệm có lưu kết quả trước/sau (native TensorFlow nếu có):
 
 ```bash
-npm run models:list                                    # danh sách v001, v002, …
-npm run start:model -- v001 --mode chat                # test chat terminal
-npm run start:model -- v002 --mode train --steps 5000  # train tiếp
-npm run start:model -- v001 --mode web                 # mở UI đã load model
+node --import tsx/esm scripts/evaluate-vi-chat.mts models/TEN_CHECKPOINT
 ```
 
-Trong UI: dropdown **Load** → chọn version → **Load** → Train hoặc Chat.
+Script lưu model vào thư mục mới và `evaluation.json` chứa câu trả lời ở từng mốc. Bộ câu hỏi có cả mẫu trong train và cách hỏi chưa có trong corpus. Trả lời được vài mẫu không chứng minh khả năng đối thoại tổng quát hoặc nhớ ngữ cảnh dài; model đang kiểm tra chỉ có context 64 ký tự.

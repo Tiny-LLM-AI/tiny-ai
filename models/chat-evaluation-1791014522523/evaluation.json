@@ -1,0 +1,132 @@
+{
+  "source": "models/chat-evaluation-1791014209452",
+  "config": {
+    "layers": 4,
+    "dModel": 128,
+    "heads": 4,
+    "ffnSize": 512,
+    "contextLength": 64,
+    "learningRate": 0.0003,
+    "batchSize": 32,
+    "dropout": 0,
+    "seed": 42,
+    "vocabSize": 229
+  },
+  "trainingLearningRate": 0.0003,
+  "corpus": [
+    "Người dùng: xin chào = Trợ lý: Xin chào! Tôi có thể giúp gì cho bạn?",
+    "Người dùng: chào bạn = Trợ lý: Chào bạn! Rất vui được trò chuyện cùng bạn.",
+    "Người dùng: bạn khỏe không = Trợ lý: Tôi khỏe, cảm ơn bạn. Còn bạn thì sao?",
+    "Người dùng: bạn tên gì = Trợ lý: Tôi là trợ lý tiếng Việt của dự án này.",
+    "Người dùng: bạn là ai = Trợ lý: Tôi là trợ lý tiếng Việt của dự án này.",
+    "Người dùng: bạn là ai? = Trợ lý: Tôi là trợ lý tiếng Việt của dự án này.",
+    "Người dùng: giới thiệu bản thân = Trợ lý: Tôi là trợ lý tiếng Việt của dự án này.",
+    "Người dùng: cho tôi biết bạn là ai = Trợ lý: Tôi là trợ lý tiếng Việt của dự án này.",
+    "Người dùng: bạn có thể làm gì = Trợ lý: Tôi có thể trả lời câu hỏi đơn giản và hỗ trợ bạn học tập.",
+    "Người dùng: cảm ơn = Trợ lý: Không có gì, rất vui được giúp bạn.",
+    "Người dùng: cảm ơn bạn nhiều = Trợ lý: Không có gì nhé!",
+    "Người dùng: tạm biệt = Trợ lý: Tạm biệt, chúc bạn một ngày tốt lành!",
+    "Người dùng: hẹn gặp lại = Trợ lý: Hẹn gặp lại bạn lần sau.",
+    "Người dùng: giúp tôi = Trợ lý: Được, bạn hãy nói rõ điều bạn cần hỗ trợ.",
+    "Người dùng: tôi cần hỗ trợ = Trợ lý: Tôi sẵn sàng hỗ trợ. Bạn muốn hỏi điều gì?",
+    "Người dùng: hôm nay là ngày đẹp trời = Trợ lý: Đúng vậy, chúc bạn có một ngày vui vẻ.",
+    "Người dùng: tiếng việt là gì = Trợ lý: Tiếng Việt là ngôn ngữ được sử dụng chủ yếu tại Việt Nam.",
+    "Người dùng: bạn hiểu tiếng việt không = Trợ lý: Có, tôi đang được huấn luyện để hiểu tiếng Việt.",
+    "Người dùng: hãy nói một câu vui = Trợ lý: Chúc bạn luôn vui vẻ và gặp nhiều điều tốt đẹp.",
+    "Người dùng: tôi buồn = Trợ lý: Tôi rất tiếc khi nghe điều đó. Bạn có muốn chia sẻ thêm không?",
+    "Người dùng: tôi vui = Trợ lý: Thật tuyệt! Tôi vui cùng bạn.",
+    "Người dùng: tôi không hiểu = Trợ lý: Tôi sẽ giải thích lại bằng cách đơn giản hơn.",
+    "Người dùng: giải thích ngắn gọn = Trợ lý: Được, tôi sẽ trả lời ngắn gọn và dễ hiểu.",
+    "Người dùng: nói chậm thôi = Trợ lý: Được, tôi sẽ trình bày từng ý một.",
+    "Người dùng: làm sao để học tốt = Trợ lý: Hãy học đều đặn, luyện tập thường xuyên và xem lại lỗi sai.",
+    "Người dùng: làm sao để học tiếng việt = Trợ lý: Hãy đọc, nghe, viết và trò chuyện bằng tiếng Việt mỗi ngày.",
+    "Người dùng: tôi muốn học lập trình = Trợ lý: Bạn có thể bắt đầu với một ngôn ngữ đơn giản và thực hành qua ví dụ.",
+    "Người dùng: máy tính là gì = Trợ lý: Máy tính là thiết bị có thể xử lý dữ liệu theo các chương trình.",
+    "Người dùng: dữ liệu là gì = Trợ lý: Dữ liệu là thông tin được lưu trữ và xử lý.",
+    "Người dùng: mô hình ngôn ngữ là gì = Trợ lý: Mô hình ngôn ngữ học các mẫu trong văn bản để dự đoán từ hoặc ký tự tiếp theo.",
+    "Người dùng: training là gì = Trợ lý: Training là quá trình cho mô hình học từ dữ liệu.",
+    "Người dùng: foundation training là gì = Trợ lý: Đây là giai đoạn giúp mô hình học chữ, từ và cấu trúc tiếng Việt.",
+    "Người dùng: fine tuning là gì = Trợ lý: Fine tuning là huấn luyện tiếp trên dữ liệu chuyên biệt để cải thiện cách trả lời.",
+    "Người dùng: hãy trả lời bằng tiếng việt = Trợ lý: Được, tôi sẽ trả lời bằng tiếng Việt.",
+    "Người dùng: bạn có chắc không = Trợ lý: Tôi sẽ cố gắng trả lời chính xác; nếu chưa chắc tôi sẽ nói rõ.",
+    "Người dùng: câu trả lời chưa đúng = Trợ lý: Cảm ơn bạn đã góp ý. Tôi sẽ xem lại câu trả lời.",
+    "Người dùng: bắt đầu thôi = Trợ lý: Được, chúng ta bắt đầu nhé!"
+  ],
+  "checkpoints": [
+    {
+      "step": 0,
+      "answers": [
+        {
+          "question": "xin chào",
+          "answer": " Xin chào! Tôi có thể giúp gì cho bạn?"
+        },
+        {
+          "question": "bạn là ai",
+          "answer": " Được, tôi sẽ trả lời ngắn gọn và dễ hiểu."
+        },
+        {
+          "question": "bạn khỏe không",
+          "answer": " Tôi khỏe, cảm ơn bạn. Còn bạn thì sao?"
+        },
+        {
+          "question": "chào bạn",
+          "answer": " Chào bạn! Rất vui được trò chuyện cùng bạn."
+        },
+        {
+          "question": "bạn tên gì",
+          "answer": " Tôi là trợ lý tiếng Việt của dự án này."
+        },
+        {
+          "question": "cảm ơn",
+          "answer": " Không có gì, rất vui được giúp bạn."
+        },
+        {
+          "question": "chào nhé",
+          "answer": " Không có gì nhé!"
+        },
+        {
+          "question": "bạn có khỏe không",
+          "answer": " Tôi khỏe, cảm ơn bạn. Còn bạn thì sao?"
+        }
+      ]
+    },
+    {
+      "step": 250,
+      "loss": 0.08773107826709747,
+      "answers": [
+        {
+          "question": "xin chào",
+          "answer": " Xin chào! Tôi có thể giúp gì cho bạn?"
+        },
+        {
+          "question": "bạn là ai",
+          "answer": " Tôi là trợ lý tiếng Việt của dự án này."
+        },
+        {
+          "question": "bạn khỏe không",
+          "answer": " Tôi khỏe, cảm ơn bạn. Còn bạn thì sao?"
+        },
+        {
+          "question": "chào bạn",
+          "answer": " Chào bạn! Rất vui được trò chuyện cùng bạn."
+        },
+        {
+          "question": "bạn tên gì",
+          "answer": " Tôi là trợ lý tiếng Việt của dự án này."
+        },
+        {
+          "question": "cảm ơn",
+          "answer": " Không có gì, rất vui được giúp bạn."
+        },
+        {
+          "question": "chào nhé",
+          "answer": " Không có gì nhé!"
+        },
+        {
+          "question": "bạn có khỏe không",
+          "answer": " Tôi khỏe, cảm ơn bạn. Còn bạn thì sao?"
+        }
+      ]
+    }
+  ]
+}

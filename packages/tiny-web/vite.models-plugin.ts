@@ -5,11 +5,15 @@ import type { Plugin, ViteDevServer } from "vite";
 import {
   EXPORTS_DIR,
   listExports,
+  listSavedModels,
   readExportIndex,
+  saveModelToFolder,
+  defaultSaveFolderName,
   saveVersionedExport,
   type ModelExportMeta,
 } from "../tiny-llm/src/model-store.ts";
 import type { ModelManifest } from "../tiny-llm/src/model-io.ts";
+import { decodeSavePayload } from "./src/model-save-codec.ts";
 
 function repoRootFromConfig(root: string): string {
   return path.resolve(root, "../..");
@@ -42,6 +46,25 @@ function modelsApiPlugin(): Plugin {
 
     server.middlewares.use((req, res, next) => {
       const pathname = req.url?.split("?")[0] ?? "";
+      if (req.method === "GET" && pathname === "/api/corpus/vi-foundation") {
+        const corpusPath = path.join(baseDir, "train-data/vi-foundation.txt");
+        if (!fs.existsSync(corpusPath)) {
+          sendJson(res, 404, { error: "Missing corpus. Run npm run fetch:vi-foundation." });
+          return;
+        }
+        res.setHeader("Content-Type", "text/plain; charset=utf-8");
+        res.setHeader("Cache-Control", "no-store");
+        fs.createReadStream(corpusPath).pipe(res);
+        return;
+      }
+      if (req.method === "GET" && pathname === "/api/corpus/vi-chat-basic") {
+        const corpusPath = path.join(baseDir, "train-data/vi-chat-basic.txt");
+        if (!fs.existsSync(corpusPath)) { sendJson(res, 404, { error: "Missing chat corpus." }); return; }
+        res.setHeader("Content-Type", "text/plain; charset=utf-8");
+        res.setHeader("Cache-Control", "no-store");
+        fs.createReadStream(corpusPath).pipe(res);
+        return;
+      }
       if (!pathname.startsWith("/models/")) return next();
       const filePath = path.join(baseDir, pathname.slice(1));
       const modelsRoot = path.join(baseDir, "models");
@@ -62,7 +85,59 @@ function modelsApiPlugin(): Plugin {
       const url = new URL(req.url, "http://local");
 
       if (req.method === "GET" && url.pathname === "/api/models/list") {
-        sendJson(res, 200, { exports: listExports(baseDir) });
+        const saved = listSavedModels(baseDir);
+        const legacy = listExports(baseDir);
+        const seen = new Set(saved.map((e) => e.id));
+        const merged = [
+          ...saved,
+          ...legacy.filter((e) => !seen.has(e.id)),
+        ];
+        sendJson(res, 200, { exports: merged });
+        return;
+      }
+
+      if (req.method === "POST" && url.pathname === "/api/models/save") {
+        try {
+          const bodyBuf = await readRawBody(req);
+          const contentType = req.headers["content-type"] ?? "";
+          let meta: import("../tiny-llm/src/model-store.ts").SavedModelMeta;
+          let manifest: ModelManifest;
+          let weights: Float32Array;
+
+          if (contentType.includes("application/vnd.tiny-gpt-save.v1")) {
+            const decoded = decodeSavePayload(bodyBuf);
+            meta = decoded.meta;
+            manifest = decoded.manifest;
+            weights = decoded.weights;
+          } else {
+            // Legacy: weights body + JSON in headers (ASCII vocab only)
+            meta = JSON.parse(
+              req.headers["x-save-meta"] as string,
+            ) as import("../tiny-llm/src/model-store.ts").SavedModelMeta;
+            manifest = JSON.parse(
+              req.headers["x-save-manifest"] as string,
+            ) as ModelManifest;
+            weights = new Float32Array(
+              bodyBuf.buffer,
+              bodyBuf.byteOffset,
+              bodyBuf.byteLength / 4,
+            );
+          }
+
+          const folderName =
+            (req.headers["x-save-name"] as string | undefined)?.trim() ||
+            defaultSaveFolderName(meta.step, meta.label ?? "vi");
+          const saved = saveModelToFolder(
+            { manifest, weights, meta, label: meta.label },
+            folderName,
+            baseDir,
+          );
+          sendJson(res, 200, saved);
+        } catch (err) {
+          sendJson(res, 500, {
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
         return;
       }
 

@@ -13,13 +13,14 @@ const HELP = `Usage: npm run start:model -- <export-id> [options]
   --mode chat     Interactive chat (default)
   --mode train    Resume training (--steps required)
   --mode web      Open Tiny GPT UI with this model loaded
+  --corpus path   Required corpus for --mode train
   --steps N       Training steps for --mode train (default 2000)
   --temperature T Chat temperature (default 0.2)
 
 Examples:
   npm run models:list
   npm run start:model -- v001 --mode chat
-  npm run start:model -- v002 --mode train --steps 5000
+  npm run start:model -- v002 --mode train --corpus train-data/vi-foundation.txt --steps 5000
   npm run start:model -- v003-step120-2026-10-02-14-30-00 --mode web
 `;
 
@@ -57,10 +58,14 @@ if (mode === "web") {
   });
   child.on("exit", (code) => process.exit(code ?? 0));
 } else if (mode === "train") {
+  if (!args.corpus) {
+    console.error("--mode train requires --corpus path.txt");
+    process.exit(1);
+  }
   const steps = args.steps ?? "2000";
   const child = spawn(
     "npm",
-    ["run", "train:tiny", "--", "--resume", modelDir, "--steps", steps],
+    ["run", "train:tiny", "--", "--resume", modelDir, "--steps", steps, "--corpus", path.resolve(process.env.INIT_CWD ?? process.cwd(), args.corpus)],
     { cwd: baseDir, stdio: "inherit", shell: process.platform === "win32" },
   );
   child.on("exit", (code) => process.exit(code ?? 0));

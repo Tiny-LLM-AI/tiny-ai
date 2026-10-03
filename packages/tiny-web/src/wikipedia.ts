@@ -28,7 +28,7 @@ export function wikipediaLangFromUrl(urlOrTitle: string): string {
 }
 
 /** Fetch plain text of one Wikipedia article (browser or Node). */
-export async function fetchWikipediaArticle(titleOrUrl: string, lang = "vi"): Promise<string> {
+export async function fetchWikipediaArticle(titleOrUrl: string, lang = "vi", signal?: AbortSignal): Promise<string> {
   const title = parseWikipediaTitle(titleOrUrl);
   const wikiLang = titleOrUrl.trim().startsWith("http") ? wikipediaLangFromUrl(titleOrUrl) : lang;
   const url =
@@ -36,7 +36,11 @@ export async function fetchWikipediaArticle(titleOrUrl: string, lang = "vi"): Pr
     `action=query&prop=extracts&explaintext=1&redirects=1&titles=${encodeURIComponent(title)}&format=json&origin=*`;
   // Custom headers in the browser trigger a CORS preflight; Node needs a User-Agent or Wikipedia rejects it.
   const inBrowser = typeof window !== "undefined";
-  const res = await fetch(url, inBrowser ? {} : { headers: { "User-Agent": "TinyGPT-LLM-mini/2.0 (educational)" } });
+  const timeout = AbortSignal.timeout(15000);
+  const res = await fetch(url, {
+    signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
+    ...(inBrowser ? {} : { headers: { "User-Agent": "TinyGPT-LLM-mini/2.0 (educational)" } }),
+  });
   if (!res.ok) throw new Error(`Wikipedia HTTP ${res.status}`);
   const data = (await res.json()) as {
     query?: { pages?: Record<string, { extract?: string; missing?: string; title?: string }> };
@@ -70,9 +74,9 @@ export function wikipediaToCorpus(text: string): string {
   return lines.join("\n");
 }
 
-export async function fetchWikipediaCorpus(titleOrUrl: string, lang = "vi"): Promise<{ title: string; corpus: string; lineCount: number }> {
+export async function fetchWikipediaCorpus(titleOrUrl: string, lang = "vi", signal?: AbortSignal): Promise<{ title: string; corpus: string; lineCount: number }> {
   const title = parseWikipediaTitle(titleOrUrl);
-  const raw = await fetchWikipediaArticle(titleOrUrl, lang);
+  const raw = await fetchWikipediaArticle(titleOrUrl, lang, signal);
   const corpus = wikipediaToCorpus(raw);
   const lineCount = corpus.split("\n").filter(Boolean).length;
   if (lineCount === 0) throw new Error("Article had no usable sentences.");

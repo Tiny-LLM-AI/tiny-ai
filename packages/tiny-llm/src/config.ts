@@ -154,6 +154,13 @@ export function shapeForTargetParams(
 
 /** Fix values that would break the model (heads must divide dModel, everything >= 1). */
 export function normalizeConfig(cfg: GptConfig): GptConfig {
+  for (const name of Object.keys(DEFAULT_CONFIG) as (keyof GptConfig)[]) {
+    const value = cfg[name];
+    if (!Number.isFinite(value)) throw new Error(`Invalid ${name}: expected a finite number.`);
+    if (!["dropout", "learningRate"].includes(name) && !Number.isSafeInteger(Math.floor(value))) {
+      throw new Error(`Invalid ${name}: integer is outside the supported range.`);
+    }
+  }
   const dModel = Math.max(4, Math.floor(cfg.dModel));
   let heads = Math.max(1, Math.min(Math.floor(cfg.heads), dModel));
   while (dModel % heads !== 0) heads -= 1;
@@ -168,4 +175,13 @@ export function normalizeConfig(cfg: GptConfig): GptConfig {
     learningRate: Math.max(1e-6, cfg.learningRate),
     batchSize: Math.max(1, Math.floor(cfg.batchSize)),
   };
+}
+
+/** Keep browser allocations bounded even for custom context/batch settings. */
+export function browserModelIssue(cfg: GptConfig): string | null {
+  if (trainability(cfg) === "cli") return "Model quá lớn cho browser. Hãy dùng CLI hoặc giảm số tham số trong Settings.";
+  if (memoryEstimate(cfg).totalBytes > 512 * 1024 * 1024) {
+    return "Bộ nhớ train ước lượng vượt 512 MB. Giảm context/batch/model trong Settings hoặc dùng CLI.";
+  }
+  return null;
 }
